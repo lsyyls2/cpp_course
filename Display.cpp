@@ -140,7 +140,7 @@ void Display::showResult(int winner) const {
     cout << "  +=============================================+" << endl << endl;
 }
 
-// 显示超时信息 (保留接口但不再使用)
+// 显示超时信息
 void Display::showTimeout(int color) const {
     cout << endl;
     setColor(12);
@@ -185,7 +185,9 @@ void Display::showError(const char* message) const {
     resetColor();
 }
 
-// 显示剩余时间 (保留接口但不再使用)
+// 显示剩余时间
 void Display::showTimeRemaining(int seconds) const {
-    // 不再显示时间
+    // 使用 \r 回到行首，实现同一行更新
+    cout << "\r  Time remaining: " << seconds << " seconds   ";
+    cout.flush();  // 立即刷新输出
 }

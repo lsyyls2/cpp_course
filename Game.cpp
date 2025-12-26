@@ -2,8 +2,11 @@
 #include <iostream>
 #include <windows.h>
 #include <cctype>
+#include <chrono>
+#include <conio.h>  // 用于 _kbhit()
 
 using namespace std;
+using namespace std::chrono;
 
 // 构造函数
 Game::Game() {
@@ -167,28 +170,84 @@ void Game::gameLoop() {
     display->showResult(winner);
 }
 
-// 处理一步棋 (无超时限制)
+// 处理一步棋 (15秒时间限制)
 bool Game::processMove() {
     Piece* move = nullptr;
+    
+    // 记录开始时间
+    auto startTime = steady_clock::now();
+    const int TIME_LIMIT = 15;  // 15秒时间限制
     
     if (currentPlayer->isAI()) {
         // AI玩家
         cout << "  Computer is thinking..." << endl;
         move = currentPlayer->getMove(*board);
         
+        // 检查AI是否超时
+        auto endTime = steady_clock::now();
+        auto elapsed = duration_cast<seconds>(endTime - startTime).count();
+        if (elapsed > TIME_LIMIT) {
+            display->showTimeout(currentPlayer->getColor());
+            winner = (currentPlayer->getColor() == BLACK) ? WHITE : BLACK;
+            return false;
+        }
+        
         // 显示AI的落子位置 (转换为显示坐标: 行从1-15, 从下往上)
         char colChar = 'a' + move->getY();
         int displayRow = BOARD_SIZE - move->getX();
         cout << "  Computer plays: " << colChar << " " << displayRow << endl;
     } else {
-        // 人类玩家 - 直接获取输入
+        // 人类玩家 - 带超时检测的输入
         display->showInputPrompt();
+        cout << endl;
         
         char colChar;
         int row = -1, col = -1;
         bool validInput = false;
+        bool timedOut = false;
         
-        while (!validInput) {
+        while (!validInput && !timedOut) {
+            // 非阻塞检测是否有输入
+            bool hasInput = false;
+            int lastShownTime = -1;  // 记录上次显示的时间
+            
+            while (!hasInput && !timedOut) {
+                // 检查是否超时
+                auto currentTime = steady_clock::now();
+                auto elapsed = duration_cast<seconds>(currentTime - startTime).count();
+                int remainingTime = TIME_LIMIT - elapsed;
+                
+                // 显示剩余时间（只在时间变化时更新）
+                if (remainingTime != lastShownTime) {
+                    display->showTimeRemaining(remainingTime);
+                    lastShownTime = remainingTime;
+                }
+                
+                if (elapsed > TIME_LIMIT) {
+                    timedOut = true;
+                    break;
+                }
+                
+                // 检查是否有键盘输入 
+                if (_kbhit()) {
+                    hasInput = true;
+                    cout << endl;  // 输入前换行
+                    break;
+                }
+                
+                // 短暂休眠避免CPU占用过高
+                Sleep(100);
+            }
+            
+            // 如果超时，退出
+            if (timedOut) {
+                cin.ignore(10000, '\n');  // 清空输入缓冲
+                display->showTimeout(currentPlayer->getColor());
+                winner = (currentPlayer->getColor() == BLACK) ? WHITE : BLACK;
+                return false;
+            }
+            
+            // 读取输入
             cin >> colChar >> row;
             
             if (cin.fail()) {
@@ -274,9 +333,10 @@ void Game::switchTurn() {
     }
 }
 
-// 检查时间是否超时 (保留接口但不再使用)
+// 检查时间是否超时
 bool Game::checkTime(long long elapsedSeconds) {
-    return false;
+    const int TIME_LIMIT = 15;  // 15秒时间限制
+    return elapsedSeconds > TIME_LIMIT;
 }
 
 // 询问是否再来一局

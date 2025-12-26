@@ -61,7 +61,7 @@ private:
     // 切换当前玩家
     void switchTurn();
     
-    // 检查时间是否超时 (已废弃, 保留接口)
+    // 检查时间是否超时 (保留接口)
     bool checkTime(long long elapsedSeconds);
     
     // 处理一步棋

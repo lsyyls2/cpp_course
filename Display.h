@@ -40,7 +40,7 @@ public:
     // 显示错误信息
     void showError(const char* message) const;
     
-    // 显示剩余时间
+    // 显示剩余时间（倒计时）
     void showTimeRemaining(int seconds) const;
     
     // 清屏
